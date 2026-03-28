@@ -92,6 +92,7 @@ class UserDeck(models.Model):
     decklist = models.TextField(null=True, blank=True)
     decklist_link = models.TextField(null=True, blank=True)
     num_matches = models.IntegerField(default=0)
+    last_played = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.user} — {self.archetype}"
@@ -112,6 +113,7 @@ class PlayerMatch(models.Model):
     )
     play = models.BooleanField()
     match_result = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
     g1_result = models.CharField(max_length=10)
     g2_result = models.CharField(max_length=10, null=True, blank=True)
     g3_result = models.CharField(max_length=10, blank=True)
