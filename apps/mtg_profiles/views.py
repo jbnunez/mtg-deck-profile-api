@@ -1,8 +1,12 @@
+import jwt
+import datetime
+from django.conf import settings
+from django.contrib.auth.hashers import check_password
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Deck, Card, MatchResult
+from .models import Deck, Card, MatchResult, UserLogin
 from .serializers import (
     CreateUserSerializer,
     CreateUserDeckSerializer,
@@ -13,6 +17,32 @@ from .serializers import (
     CardSerializer,
     MatchResultSerializer,
 )
+
+
+class LoginView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        if not email or not password:
+            return Response({"error": "Email and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = UserLogin.objects.get(email=email)
+        except UserLogin.DoesNotExist:
+            return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not check_password(password, user.password):
+            return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        payload = {
+            "user_id": user.id,
+            "email": user.email,
+            "is_admin": user.is_admin,
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=settings.JWT_EXPIRATION_HOURS),
+        }
+        token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
+        return Response({"token": token}, status=status.HTTP_200_OK)
 
 
 class CreateUserView(APIView):

@@ -86,3 +86,6 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:3000", cast=Csv())
+
+JWT_SECRET_KEY = config("JWT_SECRET_KEY", default=SECRET_KEY)
+JWT_EXPIRATION_HOURS = config("JWT_EXPIRATION_HOURS", default=24, cast=int)

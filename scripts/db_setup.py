@@ -22,8 +22,11 @@ def create_user_logins_table():
                     id       BIGSERIAL    PRIMARY KEY,
                     email    VARCHAR(255) NOT NULL UNIQUE,
                     name     VARCHAR(255) NOT NULL,
-                    password VARCHAR(255) NOT NULL
+                    password VARCHAR(255) NOT NULL,
+                    is_admin BOOLEAN      NOT NULL DEFAULT FALSE
                 );
+                ALTER TABLE user_logins
+                    ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
             """)
         print("Table 'user_logins' created (or already exists).")
     finally:
