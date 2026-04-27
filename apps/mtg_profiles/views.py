@@ -20,6 +20,8 @@ from .serializers import (
 
 
 class LoginView(APIView):
+    authentication_classes = []
+
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
@@ -46,6 +48,8 @@ class LoginView(APIView):
 
 
 class CreateUserView(APIView):
+    authentication_classes = []
+
     def post(self, request):
         serializer = CreateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

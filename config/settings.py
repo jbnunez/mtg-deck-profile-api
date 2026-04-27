@@ -83,9 +83,12 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.mtg_profiles.authentication.JWTAuthentication",
+    ],
 }
 
-CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:3000", cast=Csv())
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:3000,http://localhost:5173", cast=Csv())
 
 JWT_SECRET_KEY = config("JWT_SECRET_KEY", default=SECRET_KEY)
 JWT_EXPIRATION_HOURS = config("JWT_EXPIRATION_HOURS", default=24, cast=int)
