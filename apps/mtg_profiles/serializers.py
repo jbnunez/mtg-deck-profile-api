@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserLogin, DeckArchetype, UserDeck, PlayerMatch, Deck, Card, MatchResult
+from .models import UserLogin, ProfileField, Format, DeckArchetype, UserDeck, PlayerMatch, Deck, Card, MatchResult
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -16,6 +16,31 @@ class CreateUserSerializer(serializers.ModelSerializer):
         return user
 
 
+class ProfileFieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProfileField
+        fields = ["field_name", "field_value"]
+
+
+class UpdateProfileSerializer(serializers.Serializer):
+    field_name = serializers.ChoiceField(choices=ProfileField.FieldName.choices)
+    field_value = serializers.CharField(max_length=255)
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    profile_fields = ProfileFieldSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = UserLogin
+        fields = ["id", "name", "profile_fields"]
+
+
+class FormatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Format
+        fields = ["id", "name", "description"]
+
+
 class DeckArchetypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeckArchetype
@@ -26,6 +51,14 @@ class CreateUserDeckSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDeck
         fields = ["id", "user", "archetype", "decklist", "decklist_link"]
+
+
+class UserDeckSerializer(serializers.ModelSerializer):
+    archetype = DeckArchetypeSerializer(read_only=True)
+
+    class Meta:
+        model = UserDeck
+        fields = ["id", "archetype", "decklist", "decklist_link", "num_matches", "last_played"]
 
 
 class AddMatchResultSerializer(serializers.ModelSerializer):

@@ -43,7 +43,8 @@ def create_deck_archetypes_table():
                     name   VARCHAR(255) NOT NULL,
                     format VARCHAR(50)  NOT NULL,
                     colors VARCHAR(10)  NOT NULL,
-                    active BOOLEAN      NOT NULL DEFAULT TRUE
+                    active BOOLEAN      NOT NULL DEFAULT TRUE,
+                    UNIQUE (name, format, colors)
                 );
             """)
         print("Table 'deck_archetypes' created (or already exists).")
@@ -131,9 +132,26 @@ def create_profile_fields_table():
         conn.close()
 
 
+def create_formats_table():
+    conn = get_connection()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS formats (
+                    id          BIGSERIAL    PRIMARY KEY,
+                    name        VARCHAR(50)  NOT NULL,
+                    description VARCHAR(255)
+                );
+            """)
+        print("Table 'formats' created (or already exists).")
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     create_user_logins_table()
     create_deck_archetypes_table()
     create_match_results_table()
     create_user_decks_table()
     create_profile_fields_table()
+    create_formats_table()

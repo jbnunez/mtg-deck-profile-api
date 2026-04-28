@@ -18,6 +18,17 @@ class UserLogin(models.Model):
         db_table = "user_logins"
 
 
+class Format(models.Model):
+    name = models.CharField(max_length=50)
+    description = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "formats"
+
+
 class ProfileField(models.Model):
     class FieldName(models.TextChoices):
         X = "x", "X"
@@ -25,6 +36,8 @@ class ProfileField(models.Model):
         MTGELOPROJECT = "mtgeloproject", "MTG Elo Project"
         DISCORD = "discord", "Discord"
         TWITCH = "twitch", "Twitch"
+        ARENA = "arena", "Arena Username"
+        MTGO = "mtgo", "MTGO Username"
 
     user = models.ForeignKey(UserLogin, on_delete=models.CASCADE, related_name="profile_fields")
     field_name = models.CharField(max_length=50, choices=FieldName.choices)
@@ -38,7 +51,7 @@ class ProfileField(models.Model):
 
 
 class DeckArchetype(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     format = models.CharField(max_length=50)
     colors = models.CharField(max_length=10)
     active = models.BooleanField(default=True)
@@ -48,6 +61,7 @@ class DeckArchetype(models.Model):
 
     class Meta:
         db_table = "deck_archetypes"
+        unique_together = [("name", "format", "colors")]
 
 
 class Deck(models.Model):

@@ -6,16 +6,20 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Deck, Card, MatchResult, UserLogin
+from .models import Deck, Card, MatchResult, UserLogin, ProfileField, Format, UserDeck, DeckArchetype
 from .serializers import (
     CreateUserSerializer,
     CreateUserDeckSerializer,
+    UserDeckSerializer,
     AddMatchResultSerializer,
+    FormatSerializer,
     DeckArchetypeSerializer,
     DeckSerializer,
     DeckListSerializer,
     CardSerializer,
     MatchResultSerializer,
+    UserProfileSerializer,
+    UpdateProfileSerializer,
 )
 
 
@@ -40,6 +44,7 @@ class LoginView(APIView):
         payload = {
             "user_id": user.id,
             "email": user.email,
+            "name": user.name,
             "is_admin": user.is_admin,
             "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=settings.JWT_EXPIRATION_HOURS),
         }
@@ -54,7 +59,40 @@ class CreateUserView(APIView):
         serializer = CreateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        return Response({"id": user.id, "email": user.email, "name": user.name}, status=status.HTTP_201_CREATED)
+        payload = {
+            "user_id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "is_admin": user.is_admin,
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=settings.JWT_EXPIRATION_HOURS),
+        }
+        token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
+        return Response({"id": user.id, "email": user.email, "name": user.name, "token": token}, status=status.HTTP_201_CREATED)
+
+
+class UpdateProfileView(APIView):
+    def post(self, request):
+        serializer = UpdateProfileSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_id = request.user["user_id"]
+        field_name = serializer.validated_data["field_name"]
+        field_value = serializer.validated_data["field_value"]
+        ProfileField.objects.update_or_create(
+            user_id=user_id,
+            field_name=field_name,
+            defaults={"field_value": field_value},
+        )
+        return Response({"field_name": field_name, "field_value": field_value}, status=status.HTTP_200_OK)
+
+
+class UserProfileView(APIView):
+    def get(self, request, user_id):
+        try:
+            user = UserLogin.objects.prefetch_related("profile_fields").get(id=user_id)
+        except UserLogin.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = UserProfileSerializer(user)
+        return Response(serializer.data)
 
 
 class AddMatchResultView(APIView):
@@ -65,6 +103,33 @@ class AddMatchResultView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+class UserDeckListView(APIView):
+    def get(self, request, user_id):
+        queryset = UserDeck.objects.select_related("archetype").filter(user_id=user_id).order_by("-last_played")
+
+        format_filter = request.query_params.get("format-name")
+        if format_filter:
+            queryset = queryset.filter(archetype__format=format_filter)
+
+        try:
+            limit = min(int(request.query_params.get("limit", 20)), 100)
+            page = max(int(request.query_params.get("page", 1)), 1)
+        except ValueError:
+            return Response({"error": "limit and page must be integers."}, status=status.HTTP_400_BAD_REQUEST)
+
+        offset = (page - 1) * limit
+        total = queryset.count()
+        results = queryset[offset:offset + limit]
+
+        serializer = UserDeckSerializer(results, many=True)
+        return Response({
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "results": serializer.data,
+        })
+
+
 class CreateUserDeckView(APIView):
     def post(self, request):
         serializer = CreateUserDeckSerializer(data=request.data)
@@ -73,8 +138,37 @@ class CreateUserDeckView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+class FormatListView(APIView):
+    def get(self, request):
+        formats = Format.objects.all().order_by("name")
+        serializer = FormatSerializer(formats, many=True)
+        return Response(serializer.data)
+
+
+class AddFormatView(APIView):
+    def post(self, request):
+        if not request.user.get("is_admin"):
+            return Response({"error": "Admin access required."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = FormatSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class DeckArchetypeListView(APIView):
+    def get(self, request):
+        queryset = DeckArchetype.objects.filter(active=True).order_by("name")
+        format_filter = request.query_params.get("format-name")
+        if format_filter:
+            queryset = queryset.filter(format=format_filter)
+        serializer = DeckArchetypeSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
 class AddDeckArchetypeView(APIView):
     def post(self, request):
+        if not request.user.get("is_admin"):
+            return Response({"error": "Admin access required."}, status=status.HTTP_403_FORBIDDEN)
         serializer = DeckArchetypeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
