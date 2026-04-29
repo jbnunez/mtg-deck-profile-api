@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework_nested import routers
 from rest_framework.routers import DefaultRouter
-from .views import LoginView, CreateUserView, UserProfileView, UpdateProfileView, UserDeckListView, CreateUserDeckView, AddMatchResultView, FormatListView, AddFormatView, AddDeckArchetypeView, DeckArchetypeListView, DeckViewSet, CardViewSet, MatchResultViewSet
+from .views import LoginView, CreateUserView, UserProfileView, UpdateProfileView, UserDeckListView, CreateUserDeckView, UserDeckDetailView, UserDeckAggregateView, AddMatchResultView, FormatListView, AddFormatView, AddDeckArchetypeView, DeckArchetypeListView, DeckViewSet, CardViewSet, MatchResultViewSet
 
 router = DefaultRouter()
 router.register(r"decks", DeckViewSet, basename="deck")
@@ -21,5 +21,7 @@ urlpatterns = [
     path("archetypes/add-deck-archetype/", AddDeckArchetypeView.as_view(), name="add-deck-archetype"),
     path("user-decks/<int:user_id>/", UserDeckListView.as_view(), name="user-deck-list"),
     path("user-decks/create-user-deck/", CreateUserDeckView.as_view(), name="create-user-deck"),
+    path("user-decks/detail/<int:deck_id>/", UserDeckDetailView.as_view(), name="user-deck-detail"),
+    path("user-decks/aggregate-results/", UserDeckAggregateView.as_view(), name="user-deck-aggregate"),
     path("matches/add-match-result/", AddMatchResultView.as_view(), name="add-match-result"),
 ] + router.urls + decks_router.urls

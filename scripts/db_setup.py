@@ -88,27 +88,12 @@ def create_user_decks_table():
                     id              BIGSERIAL   PRIMARY KEY,
                     user_id         BIGINT      NOT NULL REFERENCES user_logins(id) ON DELETE CASCADE,
                     archetype_id    BIGINT      NOT NULL REFERENCES deck_archetypes(id) ON DELETE RESTRICT,
+                    name            VARCHAR(50),
                     decklist        TEXT,
                     decklist_link   TEXT,
                     num_matches     INTEGER     NOT NULL DEFAULT 0,
-                    last_played     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    last_played     TIMESTAMPTZ
                 );
-
-                ALTER TABLE user_decks
-                    ADD COLUMN IF NOT EXISTS last_played TIMESTAMPTZ NOT NULL DEFAULT NOW();
-
-                CREATE OR REPLACE FUNCTION set_last_played()
-                RETURNS TRIGGER AS $$
-                BEGIN
-                    NEW.last_played = NOW();
-                    RETURN NEW;
-                END;
-                $$ LANGUAGE plpgsql;
-
-                DROP TRIGGER IF EXISTS trg_user_decks_last_played ON user_decks;
-                CREATE TRIGGER trg_user_decks_last_played
-                    BEFORE UPDATE ON user_decks
-                    FOR EACH ROW EXECUTE FUNCTION set_last_played();
             """)
         print("Table 'user_decks' created (or already exists).")
     finally:

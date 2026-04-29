@@ -2,15 +2,18 @@ import jwt
 import datetime
 from django.conf import settings
 from django.contrib.auth.hashers import check_password
+from django.db.models import F
+from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Deck, Card, MatchResult, UserLogin, ProfileField, Format, UserDeck, DeckArchetype
+from .models import Deck, Card, MatchResult, UserLogin, ProfileField, Format, UserDeck, DeckArchetype, PlayerMatch
 from .serializers import (
     CreateUserSerializer,
     CreateUserDeckSerializer,
     UserDeckSerializer,
+    UpdateUserDeckSerializer,
     AddMatchResultSerializer,
     FormatSerializer,
     DeckArchetypeSerializer,
@@ -95,11 +98,58 @@ class UserProfileView(APIView):
         return Response(serializer.data)
 
 
+WIN_RESULTS = ["W", "WW", "LWW", "WLW"]
+DRAW_RESULTS = ["WL", "LW", "D"]
+
+
+class UserDeckAggregateView(APIView):
+    def get(self, request):
+        from django.db.models import Count, Q
+
+        deck_id = request.query_params.get("deck_id")
+        if not deck_id:
+            return Response({"error": "deck_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        matches = PlayerMatch.objects.filter(deck_id=deck_id).exclude(match_result__in=DRAW_RESULTS)
+        total = matches.count()
+        wins = matches.filter(match_result__in=WIN_RESULTS).count()
+
+        by_opponent = (
+            matches
+            .values("opp_archetype_id", "opp_archetype__name")
+            .annotate(
+                total=Count("id"),
+                wins=Count("id", filter=Q(match_result__in=WIN_RESULTS)),
+            )
+        )
+
+        return Response({
+            "total_matches": total,
+            "total_wins": wins,
+            "win_rate": round(wins / total * 100, 1) if total else 0,
+            "by_opponent": [
+                {
+                    "opp_archetype_id": row["opp_archetype_id"],
+                    "opp_archetype_name": row["opp_archetype__name"],
+                    "total_matches": row["total"],
+                    "wins": row["wins"],
+                    "win_rate": round(row["wins"] / row["total"] * 100, 1) if row["total"] else 0,
+                }
+                for row in by_opponent
+            ],
+        })
+
+
 class AddMatchResultView(APIView):
     def post(self, request):
         serializer = AddMatchResultSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        match = serializer.save()
+        if match.deck_id:
+            UserDeck.objects.filter(id=match.deck_id).update(
+                num_matches=F("num_matches") + 1,
+                last_played=timezone.now(),
+            )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -136,6 +186,28 @@ class CreateUserDeckView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class UserDeckDetailView(APIView):
+    def get(self, request, deck_id):
+        try:
+            deck = UserDeck.objects.select_related("archetype").get(id=deck_id)
+        except UserDeck.DoesNotExist:
+            return Response({"error": "Deck not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = UserDeckSerializer(deck)
+        return Response(serializer.data)
+
+    def patch(self, request, deck_id):
+        try:
+            deck = UserDeck.objects.get(id=deck_id)
+        except UserDeck.DoesNotExist:
+            return Response({"error": "Deck not found."}, status=status.HTTP_404_NOT_FOUND)
+        if deck.user_id != request.user.get("user_id"):
+            return Response({"error": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = UpdateUserDeckSerializer(deck, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserDeckSerializer(deck).data)
 
 
 class FormatListView(APIView):

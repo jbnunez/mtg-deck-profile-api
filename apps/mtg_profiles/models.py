@@ -104,10 +104,11 @@ class MatchResult(models.Model):
 class UserDeck(models.Model):
     user = models.ForeignKey(UserLogin, on_delete=models.CASCADE, related_name="decks")
     archetype = models.ForeignKey(DeckArchetype, on_delete=models.RESTRICT, related_name="user_decks")
+    name = models.CharField(max_length=50, null=True, blank=True)
     decklist = models.TextField(null=True, blank=True)
     decklist_link = models.TextField(null=True, blank=True)
     num_matches = models.IntegerField(default=0)
-    last_played = models.DateTimeField(auto_now=True)
+    last_played = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user} — {self.archetype}"

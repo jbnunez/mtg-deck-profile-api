@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import UserLogin, ProfileField, Format, DeckArchetype, UserDeck, PlayerMatch, Deck, Card, MatchResult
 
 
+
 class CreateUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -50,7 +51,7 @@ class DeckArchetypeSerializer(serializers.ModelSerializer):
 class CreateUserDeckSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDeck
-        fields = ["id", "user", "archetype", "decklist", "decklist_link"]
+        fields = ["id", "user", "archetype", "name", "decklist", "decklist_link"]
 
 
 class UserDeckSerializer(serializers.ModelSerializer):
@@ -58,7 +59,13 @@ class UserDeckSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserDeck
-        fields = ["id", "archetype", "decklist", "decklist_link", "num_matches", "last_played"]
+        fields = ["id", "user", "archetype", "name", "decklist", "decklist_link", "num_matches", "last_played"]
+
+
+class UpdateUserDeckSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserDeck
+        fields = ["archetype", "name", "decklist", "decklist_link"]
 
 
 class AddMatchResultSerializer(serializers.ModelSerializer):
