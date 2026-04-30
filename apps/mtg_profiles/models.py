@@ -2,6 +2,14 @@ from django.contrib.auth.hashers import make_password
 from django.db import models
 
 
+class ApprovedBetaEmail(models.Model):
+    email = models.CharField(max_length=255)
+    is_admin = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "approved_beta_emails"
+
+
 class UserLogin(models.Model):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)

@@ -8,13 +8,14 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Deck, Card, MatchResult, UserLogin, ProfileField, Format, UserDeck, DeckArchetype, PlayerMatch
+from .models import Deck, Card, MatchResult, UserLogin, ProfileField, Format, UserDeck, DeckArchetype, PlayerMatch, ApprovedBetaEmail
 from .serializers import (
     CreateUserSerializer,
     CreateUserDeckSerializer,
     UserDeckSerializer,
     UpdateUserDeckSerializer,
     AddMatchResultSerializer,
+    ApprovedBetaEmailSerializer,
     FormatSerializer,
     DeckArchetypeSerializer,
     DeckSerializer,
@@ -59,6 +60,9 @@ class CreateUserView(APIView):
     authentication_classes = []
 
     def post(self, request):
+        email = request.data.get("email")
+        if not ApprovedBetaEmail.objects.filter(email=email).exists():
+            return Response({"error": "This email is not approved for beta access."}, status=status.HTTP_403_FORBIDDEN)
         serializer = CreateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -71,6 +75,16 @@ class CreateUserView(APIView):
         }
         token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
         return Response({"id": user.id, "email": user.email, "name": user.name, "token": token}, status=status.HTTP_201_CREATED)
+
+
+class AddApprovedBetaEmailView(APIView):
+    def post(self, request):
+        if not request.user.get("is_admin"):
+            return Response({"error": "Admin access required."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = ApprovedBetaEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class UpdateProfileView(APIView):

@@ -1,6 +1,12 @@
 from rest_framework import serializers
-from .models import UserLogin, ProfileField, Format, DeckArchetype, UserDeck, PlayerMatch, Deck, Card, MatchResult
+from .models import UserLogin, ProfileField, Format, ApprovedBetaEmail, DeckArchetype, UserDeck, PlayerMatch, Deck, Card, MatchResult
 
+
+
+class ApprovedBetaEmailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApprovedBetaEmail
+        fields = ["id", "email", "is_admin"]
 
 
 class CreateUserSerializer(serializers.ModelSerializer):

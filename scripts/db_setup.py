@@ -13,6 +13,22 @@ def get_connection():
     )
 
 
+def create_approved_beta_emails_table():
+    conn = get_connection()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS approved_beta_emails (
+                    id       BIGSERIAL    PRIMARY KEY,
+                    email    VARCHAR(255) NOT NULL,
+                    is_admin BOOLEAN      NOT NULL DEFAULT FALSE
+                );
+            """)
+        print("Table 'approved_beta_emails' created (or already exists).")
+    finally:
+        conn.close()
+
+
 def create_user_logins_table():
     conn = get_connection()
     try:
@@ -134,6 +150,7 @@ def create_formats_table():
 
 
 if __name__ == "__main__":
+    create_approved_beta_emails_table()
     create_user_logins_table()
     create_deck_archetypes_table()
     create_match_results_table()

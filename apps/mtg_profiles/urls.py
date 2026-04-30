@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework_nested import routers
 from rest_framework.routers import DefaultRouter
-from .views import LoginView, CreateUserView, UserProfileView, UpdateProfileView, UserDeckListView, CreateUserDeckView, UserDeckDetailView, UserDeckAggregateView, AddMatchResultView, FormatListView, AddFormatView, AddDeckArchetypeView, DeckArchetypeListView, DeckViewSet, CardViewSet, MatchResultViewSet
+from .views import LoginView, CreateUserView, UserProfileView, UpdateProfileView, UserDeckListView, CreateUserDeckView, UserDeckDetailView, UserDeckAggregateView, AddMatchResultView, FormatListView, AddFormatView, AddDeckArchetypeView, DeckArchetypeListView, AddApprovedBetaEmailView, DeckViewSet, CardViewSet, MatchResultViewSet
 
 router = DefaultRouter()
 router.register(r"decks", DeckViewSet, basename="deck")
@@ -12,6 +12,7 @@ decks_router.register(r"matches", MatchResultViewSet, basename="deck-matches")
 
 urlpatterns = [
     path("users/login/", LoginView.as_view(), name="login"),
+    path("users/add-approved-beta-email/", AddApprovedBetaEmailView.as_view(), name="add-approved-beta-email"),
     path("users/create-user/", CreateUserView.as_view(), name="create-user"),
     path("users/<int:user_id>/profile/", UserProfileView.as_view(), name="user-profile"),
     path("users/update-profile/", UpdateProfileView.as_view(), name="update-profile"),
