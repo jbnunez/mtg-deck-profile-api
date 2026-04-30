@@ -116,7 +116,7 @@ class UserDeckAggregateView(APIView):
 
         by_opponent = (
             matches
-            .values("opp_archetype_id", "opp_archetype__name")
+            .values("opp_archetype_id", "opp_archetype__name", "opp_archetype__colors")
             .annotate(
                 total=Count("id"),
                 wins=Count("id", filter=Q(match_result__in=WIN_RESULTS)),
@@ -131,6 +131,7 @@ class UserDeckAggregateView(APIView):
                 {
                     "opp_archetype_id": row["opp_archetype_id"],
                     "opp_archetype_name": row["opp_archetype__name"],
+                    "opp_archetype_colors": row["opp_archetype__colors"],
                     "total_matches": row["total"],
                     "wins": row["wins"],
                     "win_rate": round(row["wins"] / row["total"] * 100, 1) if row["total"] else 0,
